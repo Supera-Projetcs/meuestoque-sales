@@ -53,7 +53,7 @@ def sale_list(request):
 def sales_report(request):
     total_sales_count = Sale.objects.count()  
 
-    product_info_url = "http://url-do-outro-servico/product/info"
+    product_info_url = "localhost:3001/inventorys/id"
     try:
         response = requests.get(product_info_url)
         response.raise_for_status()  
