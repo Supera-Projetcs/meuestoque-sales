@@ -1,13 +1,13 @@
-from decimal import Decimal
-from django.http import JsonResponse
-from collections import defaultdict
-
-from rest_framework import status
+from django.db import models
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from rest_framework import status
 from .models import Sale
 from .serializers import SaleSerializer
+
 import requests
+from decimal import Decimal
+from collections import defaultdict
 
 @api_view(['GET', 'POST'])
 def sale_list(request):
@@ -20,6 +20,7 @@ def sale_list(request):
         if sale_serializer.is_valid():
             products_data = request.data  
             sales_data = []
+            new_products = []  
             product_ids = ','.join([str(product_data['id']) for product_data in products_data])  
 
             product_url = f"http://localhost:3001/inventorys/by-ids/?ids={product_ids}"
@@ -35,12 +36,23 @@ def sale_list(request):
                     if product_detail:
                         sale_data = {
                             'id': product_id,
-                            'quantity': quantity,                        }
+                            'quantity': quantity,
+                        }
                         sales_data.append(sale_data)
                     else:
-                        return Response(f"Product with ID {product_id} not found", status=status.HTTP_404_NOT_FOUND)
+                        new_products.append({
+                            'id': product_id,
+                            'quantity': quantity
+                        })
             except requests.exceptions.RequestException as e:
                 return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            for new_product in new_products:
+                new_product_serializer = SaleSerializer(data=new_product)
+                if new_product_serializer.is_valid():
+                    new_product_serializer.save()
+                else:
+                    return Response(new_product_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
             sale_serializer = SaleSerializer(data=sales_data, many=True)
             if sale_serializer.is_valid():
@@ -50,7 +62,8 @@ def sale_list(request):
                 return Response(sale_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response(sale_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
+
 @api_view(['GET'])
 def sales_report(request):
     try:
@@ -94,3 +107,4 @@ def sales_report(request):
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     except Exception as e:
         return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
