@@ -53,28 +53,32 @@ def sale_list(request):
     
 @api_view(['GET'])
 def sales_report(request):
-    sale_serializer = SaleSerializer(data=request.data, many=True)  
-    if sale_serializer.is_valid():
-        products_data = request.data  
-        product_ids = ','.join([str(product_data['id']) for product_data in products_data])  
-        
+    try:
+        sales = Sale.objects.all()
+        sale_serializer = SaleSerializer(sales, many=True)
+
+        products_data = sale_serializer.data
+        product_ids = ','.join([str(product_data['id']) for product_data in products_data])
+
         product_url = f"http://localhost:3001/inventorys/by-ids/?ids={product_ids}"
-        
         response = requests.get(product_url)
         response.raise_for_status()
         product_data_with_details = response.json()
-        
+
         total_sales_count = 0
         total_sales_price = Decimal(0)
         product_sales = defaultdict(int)
-        
-        for product_ids, product_info in product_data_with_details.items():
-            product_name = product_info.get('name')
-            product_price = Decimal(product_info.get('price', 0))
-            
-            total_sales_count += sale_serializer.quantity
-            total_sales_price += sale_serializer.quantity * product_price
-            product_sales[product_name] += sale_serializer.quantity
+
+        for sale_data in products_data:
+            product_id = sale_data['id']
+            product_quantity = sale_data['quantity']
+            product_info = product_data_with_details.get(str(product_id))
+            if product_info:
+                product_name = product_info.get('name')
+                product_price = Decimal(product_info.get('price', 0))
+                total_sales_count += product_quantity
+                total_sales_price += product_quantity * product_price
+                product_sales[product_name] += product_quantity
 
         best_selling_product_name = max(product_sales, key=product_sales.get)
 
@@ -83,5 +87,10 @@ def sales_report(request):
             'total_sales_price': round(total_sales_price, 2),
             'best_selling_product_name': best_selling_product_name,
         }
+
         return Response(response_data, status=200)
-    
+
+    except requests.exceptions.RequestException as e:
+        return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    except Exception as e:
+        return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
