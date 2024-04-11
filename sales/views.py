@@ -1,13 +1,28 @@
 from decimal import Decimal
 from django.http import JsonResponse
 from collections import defaultdict
-
+from rest_framework import viewsets
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from .models import Sale
-from .serializers import SaleSerializer
+from .models import Sale, Product
+from .serializers import SaleSerializer, ProductSerializer
 import requests
+
+
+class ProductViewSet(viewsets.ModelViewSet):
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
+
+
+class SaleViewSet(viewsets.ModelViewSet):
+    queryset = Sale.objects.all()
+    serializer_class = SaleSerializer
+
+    def list(self, request, *args, **kwargs):
+
+        return super().list(request, *args, **kwargs)
+
 
 @api_view(['GET', 'POST'])
 def sale_list(request):
