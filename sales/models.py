@@ -12,3 +12,9 @@ class Product(models.Model):
 class Sale(models.Model):
     produtos = models.ManyToManyField(Product, related_name="products_sales")
     date_sold = models.DateTimeField(auto_now_add=True)
+
+    def total(self):
+        total = 0
+        for product in self.produtos.all():
+            total += product.unit_value * product.quantity
+        return total
