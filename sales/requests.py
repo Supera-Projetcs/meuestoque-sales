@@ -2,7 +2,7 @@ import requests
 
 
 def inventory_update_quantity(id_produto: int, quantity: int):
-    url = "http://127.0.0.1:3001/inventorys/update-quantities"
+    url = "http://127.0.0.1:8001/inventorys/update-quantities"
 
     payload = [
         {

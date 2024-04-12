@@ -31,6 +31,8 @@ def sales_statistics(request):
     for sale in Sale.objects.all():
         total_vendido += sale.total()
 
+    total_vendas = Sale.objects.all().count()
+
     produtos_vendidos = {}
     for sale in Sale.objects.all():
         for product in sale.produtos.all():
@@ -43,6 +45,7 @@ def sales_statistics(request):
 
     return Response({
         'total_vendido': total_vendido,
+        'total_vendas': total_vendas,
         'produto_mais_vendido': {
             'id_produto': produto_mais_vendido.id_produto,
             'quantidade_vendida': produtos_vendidos[produto_mais_vendido_id]
